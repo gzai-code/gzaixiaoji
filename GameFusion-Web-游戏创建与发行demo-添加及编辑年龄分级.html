@@ -4583,7 +4583,18 @@ dialog.pgn-dialog::backdrop { background: rgb(30 43 55 / 22%); }
 .pgc-age-note{margin-top:20px;padding:12px 15px;color:#617987;background:#f1f8f9;border:1px solid #dcebed;border-radius:4px;font-size:12px;line-height:1.7}
 @media(max-width:600px){.pgc-age-options{grid-template-columns:1fr}}
 </style>
-</head><body>
+<style>
+.pgp-age-settings .pgc-basic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.pgp-age-settings .pgc-field--wide{grid-column:1/-1}
+.pgp-age-settings .pgc-field>label,.pgp-age-settings legend{display:block;margin:0 0 8px;color:#53677d;font-size:12px;font-weight:500}
+.pgp-age-settings select,.pgp-age-settings input:not([type=checkbox]),.pgp-age-settings textarea{box-sizing:border-box;width:100%;min-height:40px;padding:10px 12px;border:1px solid #d4dce5;border-radius:6px;background:#fff;color:#425970;font:inherit;font-size:13px}
+.pgp-age-settings textarea{resize:vertical;line-height:1.7}
+.pgp-age-settings fieldset{min-width:0;margin:0;padding:0;border:0}
+.pgp-age-settings input[type=checkbox]{width:16px;height:16px;flex:0 0 auto;accent-color:#00b9bd}
+.pgp-age-settings .pgc-error{font-size:12px;color:#e5484d}
+.pgp-age-settings .pgc-age-note{border-radius:8px}
+@media(max-width:600px){.pgp-age-settings .pgc-basic-grid{grid-template-columns:1fr}}
+</style></head><body>
 <div id="app"></div>
 <textarea id="portal-module" hidden aria-hidden="true">{"id":"02","name":"游戏创建与发行","description":"创建游戏项目，维护版本发布、发布记录与游戏资质认证。","output":"02-游戏创建与发行demo.html","aliases":["02-CDKEY商品与供给demo.html"],"defaultRoute":"P02-01","routeIds":["P01-01","P01-03","P01-08","P01-09","P01-10","P02-01"]}</textarea>
 <textarea id="portal-modules" hidden aria-hidden="true">[{"id":"01","name":"开发者平台与企业认证","description":"开发者首页、弹窗登录、帮助中心、平台注册、企业认证申请与状态、运营审核和中英文内容配置闭环。","output":"01-开发者平台与资料demo.html","defaultRoute":"P01-01","routeIds":["P01-01","P01-03","P01-08","P01-09","P01-10","P02-01"]},{"id":"02","name":"游戏创建与发行","description":"创建游戏项目，维护版本发布、发布记录与游戏资质认证。","output":"02-游戏创建与发行demo.html","aliases":["02-CDKEY商品与供给demo.html"],"defaultRoute":"P02-01","routeIds":["P01-01","P01-03","P01-08","P01-09","P01-10","P02-01"]},{"id":"03","name":"包体测试与版本发布","description":"Windows、macOS、Linux 的 Build／Manifest、测试、Release Pointer 发布与历史 Build 回滚。","output":"03-包体测试与发布demo.html","defaultRoute":"P03-01"},{"id":"04","name":"精准化投放与发行数据","description":"经营看板、Campaign／UTM、人工资源执行、渠道归因及聚合导出。","output":"04-精准投放与数据demo.html","defaultRoute":"P04-01"}]</textarea>
@@ -5839,6 +5850,11 @@ dialog.pgn-dialog::backdrop { background: rgb(30 43 55 / 22%); }
     if (!relationships.some(item => item.id === draft.relationship)) errors.relationship = 'relationshipRequired';
     if (!Array.isArray(draft.platforms) || !draft.platforms.length || draft.platforms.some(platform => !platforms.includes(platform))) errors.platforms = 'platformsRequired';
     if (!releasePlans.some(plan => plan.id === draft.releasePlan)) errors.releasePlan = 'releasePlanRequired';
+    return errors;
+  }
+
+  function validateAge(draft) {
+    const errors = {};
     if (!['0','3','7','12','16','18'].includes(draft.minimumAge)) errors.minimumAge = '请选择最低适用年龄 / Select a minimum age.';
     if (!draft.contentWarnings?.length) errors.contentWarnings = '请声明游戏内容 / Declare the game content.';
     if (draft.contentWarnings?.some(x => x !== 'none') && !String(draft.contentDescription || '').trim()) errors.contentDescription = '请补充敏感内容说明 / Describe the sensitive content.';
@@ -5853,12 +5869,12 @@ dialog.pgn-dialog::backdrop { background: rgb(30 43 55 / 22%); }
     return `<div class="pgc-field pgc-field--wide"><span class="pgc-field-label" id="create-genres-label">${text.gameTypes} ${requiredMark}</span><div class="pgc-multiselect${draft.genreOpen ? ' is-open' : ''}" data-create-genre-box><button type="button" class="pgc-multiselect__trigger" aria-labelledby="create-genres-label" aria-controls="create-genres-menu" aria-haspopup="true" aria-expanded="${draft.genreOpen}" data-create-genre-toggle${invalid(draft, 'genres')}><span class="pgc-multiselect__value${selected ? '' : ' is-placeholder'}">${selected || text.selectGameTypes}</span>${chevronIcon}</button>${draft.genreOpen ? `<div class="pgc-multiselect__menu" id="create-genres-menu" role="group" aria-labelledby="create-genres-label">${genres.map((genre, index) => `<label><input type="checkbox" value="${escape(genre)}" data-create-genre-option="${index}"${draft.genres.includes(genre) ? ' checked' : ''}><span>${escape(text.genres[genre])}</span></label>`).join('')}</div>` : ''}</div>${fieldError(draft, 'genres', text)}</div>`;
   }
 
-  function renderAgeSettings(draft, language) {
+  function renderAgeSettings(draft, language, editor = false) {
     const en = language === 'en';
     const labels = en ? ['None of the following','Violence / gore','Sexual content / nudity','Adult-only sexual content','Strong language','Alcohol / drugs','Gambling','Horror'] : ['不含以下内容','暴力／血腥','性内容／裸露','仅限成人的性内容','粗俗语言','酒精／毒品','赌博','恐怖'];
     const codes = ['none','violence','sexual','adult','language','substances','gambling','horror'];
     const err = key => fieldError(draft,key,copy[en?'en':'zh']);
-    return `<section class="pgc-card pgc-age-settings"><h2>${en ? 'Age restrictions & content ratings' : '年龄限制与内容分级'} ${requiredMark}</h2><p class="pgc-age-intro">${en ? 'Declare the full content of your game, including content in the build that players cannot normally access.' : '请如实声明游戏完整内容，包括包体中未向玩家开放的内容。'}</p><div class="pgc-basic-grid">
+    const markup = `<section class="pgc-card pgc-age-settings"><h2>${en ? 'Age restrictions & content ratings' : '年龄限制与内容分级'} ${requiredMark}</h2><p class="pgc-age-intro">${en ? 'Declare the full content of your game, including content in the build that players cannot normally access.' : '请如实声明游戏完整内容，包括包体中未向玩家开放的内容。'}</p><div class="pgc-basic-grid">
     <div class="pgc-field pgc-field--wide"><label for="create-minimum-age">${en ? 'Minimum player age' : '最低适用年龄'} ${requiredMark}</label><select id="create-minimum-age" data-create-age-field="minimumAge"${invalid(draft,'minimumAge')}><option value="">${en ? 'Select' : '请选择'}</option>${['0','3','7','12','16','18'].map(age=>`<option value="${age}"${draft.minimumAge===age?' selected':''}>${age==='0'?(en?'All ages':'全年龄'):age+'+'}</option>`).join('')}</select><small class="pgc-age-hint">${en ? 'Platform access setting. This selection does not generate an official regional rating.' : '用于平台年龄访问与购买校验；此项为平台设置，不自动生成任何地区的官方分级。'}</small>${err('minimumAge')}</div>
     <fieldset class="pgc-platform-field pgc-field--wide"><legend>${en ? 'Content disclosure' : '游戏内容声明'} ${requiredMark}</legend><div class="pgc-age-options">${codes.map((code,i)=>`<label><input type="checkbox" data-create-content="${code}"${draft.contentWarnings?.includes(code)?' checked':''}><span>${labels[i]}</span></label>`).join('')}</div>${err('contentWarnings')}</fieldset>
     <div class="pgc-field pgc-field--wide"><label for="create-content-description">${en ? 'Sensitive content description' : '敏感内容说明'}</label><textarea id="create-content-description" rows="3" maxlength="2000" data-create-age-field="contentDescription" placeholder="${en ? 'Describe the nature, intensity and frequency of the content; required when sensitive content is selected.' : '选择敏感内容时必填，请说明表现形式、强度及出现频率，例如：战斗中有少量血液，无肢解画面。'}"${invalid(draft,'contentDescription')}>${escape(draft.contentDescription||'')}</textarea>${err('contentDescription')}</div>
@@ -5866,6 +5882,11 @@ dialog.pgn-dialog::backdrop { background: rgb(30 43 55 / 22%); }
     <div class="pgc-field"><label for="create-rating-value">${en ? 'Issued rating / reference' : '已有分级结果／编号'}</label><input id="create-rating-value" data-create-age-field="ratingValue" value="${escape(draft.ratingValue||'')}" maxlength="100" placeholder="${en ? 'For example: PEGI 16 / certificate reference' : '例如 PEGI 16／证书编号'}"${invalid(draft,'ratingValue')}>${err('ratingValue')}</div>
     <div class="pgc-field pgc-field--wide"><label class="pgc-age-confirm"><input type="checkbox" data-create-age-confirm${draft.ageConfirmed?' checked':''}><span>${en ? 'I confirm this declaration accurately reflects the game. Content changes will require an updated declaration and review.' : '我确认上述信息真实、完整；游戏内容发生变化后，将更新声明并重新提交审核。'}</span></label>${err('ageConfirmed')}</div>
     </div><div class="pgc-age-note">${en ? 'Content declarations and existing ratings are reviewed by the platform. Regional requirements may differ; the approved regional rating takes precedence.' : '内容声明与已有分级资料由平台审核。不同发行地区的要求可能不同，最终以该地区审核通过的分级与限制为准。'}</div></section>`;
+    if (!editor) return markup;
+    const title = en ? 'Age restrictions & content ratings' : '年龄限制与内容分级';
+    const intro = en ? 'Declare all game content and provide existing ratings where available.' : '如实声明游戏内容，并补充已有分级信息。';
+    const body = markup.slice(markup.indexOf('<div class="pgc-basic-grid">'), markup.lastIndexOf('</section>'));
+    return `<section class="pgp-card pgp-age-settings" id="profile-section-age"><header><div><h3>${title}</h3><p>${intro}</p></div></header><div class="pgp-card-body">${body}</div></section>`;
   }
 
   function render(draft, language = 'zh') {
@@ -5881,7 +5902,6 @@ dialog.pgn-dialog::backdrop { background: rgb(30 43 55 / 22%); }
             ${draft.relationship === 'publisher' ? `<div class="pgc-field" data-create-developer-field><label for="create-developer-name">${text.developerName} <span class="pgc-optional">${text.optional}</span></label><input id="create-developer-name" type="text" value="${escape(draft.developerName)}" placeholder="${text.developerPlaceholder}" maxlength="100" autocomplete="off" data-create-developer-name></div>` : ''}
             <fieldset class="pgc-platform-field pgc-field--wide" aria-label="${text.platforms}"${invalid(draft, 'platforms')}><legend>${text.platforms} ${requiredMark}</legend><div class="pgc-choice-row">${platforms.map(platform => `<label><input type="checkbox" name="createPlatforms" value="${platform}" data-create-platform${draft.platforms.includes(platform) ? ' checked' : ''}><span>${platform}</span></label>`).join('')}</div>${fieldError(draft, 'platforms', text)}</fieldset>
           </div></section>
-          ${renderAgeSettings(draft, language)}
           <section class="pgc-card"><h2>${text.releasePlan} ${requiredMark}</h2><div class="pgc-plan-grid" role="radiogroup" aria-label="${text.releasePlan}">${releasePlans.map((plan, index) => `<label class="pgc-plan-card pgc-plan-card--${plan.id}${draft.releasePlan === plan.id ? ' is-selected' : ''}"><input type="radio" name="releasePlan" value="${plan.id}" data-create-release-plan="${plan.id}"${draft.releasePlan === plan.id ? ' checked' : ''}${index === 0 ? invalid(draft, 'releasePlan') : ''}><span class="pgc-plan-copy"><strong>${escape(text.plans[plan.id].title)}</strong><small>${escape(text.plans[plan.id].description)}</small></span><span class="pgc-plan-icon">${plan.icon}</span></label>`).join('')}</div>${fieldError(draft, 'releasePlan', text)}</section>
           <footer class="pgc-form-footer"><div><button type="button" class="pgc-button" data-create-close>${text.back}</button><button type="submit" class="pgc-button pgc-button--primary" data-create-submit>${draft.submitting ? text.creating : text.createGame}</button></div></footer>
           ${fieldError(draft, 'submit', text)}
@@ -6009,7 +6029,7 @@ dialog.pgn-dialog::backdrop { background: rgb(30 43 55 / 22%); }
       if (draft.minimumAge && (!values.includes('adult') || draft.minimumAge === '18')) clearError('minimumAge');
       if (!values.some(x => x !== 'none')) clearError('contentDescription');
     }));
-    root.querySelector('[data-create-age-confirm]').addEventListener('change', event => {draft.ageConfirmed = event.target.checked;clearError('ageConfirmed')});
+    root.querySelector('[data-create-age-confirm]')?.addEventListener('change', event => {draft.ageConfirmed = event.target.checked;clearError('ageConfirmed')});
     root.querySelectorAll('[data-create-release-plan]').forEach(input => input.addEventListener('change', event => {
       draft.releasePlan = event.target.value;
       draft.genreOpen = false;
@@ -6077,7 +6097,7 @@ dialog.pgn-dialog::backdrop { background: rgb(30 43 55 / 22%); }
     }
   }
 
-  window.PublisherGameCreate = { createDraft, render, bind, validate, renderAgeSettings, validateAge: draft => Object.fromEntries(Object.entries(validate(draft)).filter(([key]) => ["minimumAge","contentWarnings","contentDescription","ratingValue","ageConfirmed"].includes(key))) };
+  window.PublisherGameCreate = { createDraft, render, bind, validate, renderAgeSettings, validateAge };
 })();
 
 /* 01/02 共用 PC 发行资质规则。新资质独立审核，历史上架快照不追补字段。 */
@@ -7321,7 +7341,7 @@ dialog.pgn-dialog::backdrop { background: rgb(30 43 55 / 22%); }
     const submissionTime = draft.submittedAt || draft.savedAt;
     const reviewResult = draft.reviewResult;
     const reviewHTML = reviewResult ? `<aside class="pgp-review-result${draft.reviewStatus === 'rejected' ? ' is-rejected' : ''}" data-profile-review-result><strong>${esc(t(lang, draft.reviewStatus === 'rejected' ? 'rejectedNotice' : 'approved'))}</strong>${draft.reviewStatus === 'rejected' ? `<p><b>${esc(t(lang, 'reviewReason'))}：</b><span data-profile-review-reason>${esc(reviewResult.reason)}</span></p>` : ''}<div><span>${esc(t(lang, 'reviewer'))}：${esc(reviewResult.reviewer || '—')}</span><span>${esc(t(lang, 'reviewedAt'))}：${esc(reviewResult.reviewedAt ? new Date(reviewResult.reviewedAt).toLocaleString(lang === 'en' ? 'en-GB' : 'zh-CN', { hour12: false }) : '—')}</span></div></aside>` : '';
-    const profileBody = `${card(draft, lang, 'basic', basic)}<div class="publisher-game-create pgp-age-settings">${window.PublisherGameCreate.renderAgeSettings(draft, lang)}</div>${card(draft, lang, 'classification', classification)}${card(draft, lang, 'developer', developer)}${card(draft, lang, 'assets', window.PublisherGameNames.render(draft, lang, { readonly, hideInput: true, idPrefix: 'profile-assets', title: lang === 'en' ? 'Store detail languages' : '商店资料语言' }) + `<p class="pgp-hint">${esc(t(lang, 'assetLocaleHint'))}</p>` + renderAssets(draft, lang))}${card(draft, lang, 'settings', settings)}`;
+    const profileBody = `${card(draft, lang, 'basic', basic)}${window.PublisherGameCreate.renderAgeSettings(draft, lang, true)}${card(draft, lang, 'classification', classification)}${card(draft, lang, 'developer', developer)}${card(draft, lang, 'assets', window.PublisherGameNames.render(draft, lang, { readonly, hideInput: true, idPrefix: 'profile-assets', title: lang === 'en' ? 'Store detail languages' : '商店资料语言' }) + `<p class="pgp-hint">${esc(t(lang, 'assetLocaleHint'))}</p>` + renderAssets(draft, lang))}${card(draft, lang, 'settings', settings)}`;
     const releaseAnchor = ['profile', 'builds', 'catalog', 'release', 'qualification'].includes(draft.ui.releaseAnchor) ? draft.ui.releaseAnchor : 'profile';
     let releaseLocator = releaseWorkspace ? `<nav class="pgp-release-locator" aria-label="${lang === 'en' ? 'Version release sections' : '版本发布页内定位'}">${[['profile', '游戏资料', 'Game details'], ['builds', 'PC 包体', 'PC builds'], ['catalog', '商品与 SKU', 'Products & SKU'], ['release', '发行设置', 'Release settings'], ['qualification', '资质认证', 'Qualifications']].map(([id, zh, en]) => {
       const label = lang === 'en' ? en : zh;
@@ -12687,7 +12707,7 @@ window.GameHubDeveloperPortal = window.GameHubDeveloperPortal || {};
       relationship: draft.relationship,
       developerName: draft.relationship === 'publisher' ? String(draft.developerName || '').trim() : '',
       releasePlan: draft.releasePlan,
-      ageRestriction: { minimumAge: Number(draft.minimumAge), contentWarnings: [...draft.contentWarnings], description: draft.contentDescription, ratingAuthority: draft.ratingAuthority, ratingValue: draft.ratingValue, confirmed: draft.ageConfirmed, reviewStatus: 'pending' },
+      ageRestriction: { minimumAge: Number(draft.minimumAge), contentWarnings: [...(draft.contentWarnings || [])], description: draft.contentDescription, ratingAuthority: draft.ratingAuthority, ratingValue: draft.ratingValue, confirmed: draft.ageConfirmed, reviewStatus: 'pending' },
       stage: stageByReleasePlan[draft.releasePlan] || '开放预约准备',
       developer: draft.relationship === 'publisher' ? (String(draft.developerName || '').trim() || '待补充') : '星海互动',
       createData: JSON.parse(JSON.stringify({ ...draft, genreOpen: false, errors: {}, submitting: false })),
