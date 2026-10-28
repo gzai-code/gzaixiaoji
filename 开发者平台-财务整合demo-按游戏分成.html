@@ -12571,6 +12571,7 @@ window.PublisherSettlementStatements = (() => {
       userPaidMinor:0, paymentFeeMinor:0, taxMinor:0, taxableMinor:0, refundChargebackMinor, refundMinor, chargebackMinor, salesTaxMinor:0,
       platformReceivedMinor, shareableNetMinor:0, weightedTaxRate:null, platformShareRate:null, platformShareMinor:0, payableMinor:platformReceivedMinor,
       payableUsdMinor:roundMinor(platformReceivedMinor / context.fx.rate), tierRuleVersion:'POLICY-REFUND-OFFSET', tierRuleEffectiveBillingMonth:'0000-01', tierSnapshots:[],
+      refundDetails:[{ productType:'游戏本体', productName:context.game.name+' 标准版', refundChargebackMinor }],
     });
   };
   const createStatement = context => context.itemType === 'game_sales_share' ? createGameStatement(context) : context.itemType === 'cdkey_sales_share' ? createCdkeyStatement(context) : createAdjustmentStatement(context);
@@ -13060,6 +13061,11 @@ window.__PUBLISHER_FINANCE_EMBEDDED__ = true;
       product.userPaidMinor+=Number(item.userPaidMinor || 0);
       product.refundChargebackMinor+=Number(item.refundChargebackMinor || 0);
     });
+    (row.sourceStatements || []).forEach(statement=>(statement.refundDetails || []).forEach(item=>{
+      const key=JSON.stringify([item.productType,item.productName]);
+      if(!products.has(key))products.set(key,{...item,userPaidMinor:0,refundChargebackMinor:0});
+      products.get(key).refundChargebackMinor+=Number(item.refundChargebackMinor || 0);
+    }));
     const details=[...products.values()];
     return `<div class="d15-drawer-layer" data-finance-action="close-game-sales"><aside class="d15-cdkey-drawer d15-settlement-drawer" role="dialog" aria-modal="true" aria-label="游戏销售明细" data-finance-stop><header><div><h2>游戏销售明细</h2><p>${esc(row.gameName)} · ${esc(row.billingMonth)} 账单 / ${esc(row.settlementMonth)} 结算</p></div><button type="button" class="gh-dialog-close" data-finance-action="close-game-sales" aria-label="关闭">×</button></header><section class="d15-cdkey-summary d15-detail-summary"><div><span>总收入</span><strong>${esc(cnyWithSymbol(row.userPaidMinor))}</strong></div><div><span>退款与拒付</span><strong>${esc(cnyWithSymbol(row.refundChargebackMinor))}</strong></div><div><span>平台分成</span><strong>${esc(cnyWithSymbol(row.platformShareMinor))}</strong></div><div><span>结算金额（CNY）</span><strong>${esc(cnyWithSymbol(row.payableMinor))}</strong></div></section><div class="d15-cdkey-body"><div class="gh-table-wrap"><table class="gh-table d15-cdkey-table d15-game-sales-table" data-testid="game-sales-detail-table"><thead><tr><th>商品类型</th><th>商品名称</th><th>总收入</th><th>退款与拒付</th></tr></thead><tbody>${details.map(item => `<tr><td>${esc(item.productType)}</td><td><strong>${esc(item.productName)}</strong></td><td class="d15-number">${esc(cny(item.userPaidMinor))}</td><td class="d15-number">${esc(cny(item.refundChargebackMinor))}</td></tr>`).join('')}</tbody></table></div></div></aside></div>`;
   }
