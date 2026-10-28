@@ -5752,7 +5752,9 @@ dialog.pgn-dialog::backdrop { background: rgb(30 43 55 / 22%); }
 }
 .fo-page[data-active-tab="entity"] .fo-filters { grid-template-columns:minmax(280px,1.6fr) minmax(160px,.65fr) minmax(140px,.55fr) auto; }
 .fo-game-filters { grid-template-columns:minmax(250px,1.35fr) minmax(220px,1.15fr) repeat(2,minmax(140px,.7fr)); }
+.fo-sharing-filters { grid-template-columns:repeat(3,minmax(0,1fr)) auto; }
 .fo-game-filters .fo-filter-actions { justify-self:end; }
+.fo-page[data-active-tab="game"] .fo-game-filters .fo-filter-actions { grid-column:-2 / -1; }
 .fo-sharing-filters .fo-filter-actions { grid-column:-2 / -1; }
 .fo-filters label { min-width:0; display:grid; gap:7px; }
 .fo-filters label > span { color:#5f6a7c; font-size:12px; line-height:18px; font-weight:600; }
@@ -14673,7 +14675,7 @@ window.PublisherFinanceOperationsModel = (() => {
     activeTab:'entity',
     filters:{
       entity:{ keyword:'', billingMonth:'2026-08', status:'all' },
-      game:{ keyword:'', billingMonth:'all', settlementMonth:'all', gameId:'all', itemType:'all', status:'all' },
+      game:{ keyword:'', billingMonth:'all', settlementMonth:'all', gameId:'all', status:'all' },
     },
     pages:{ entity:1, game:1 },
     selected:{ entity:[], game:[] },
@@ -14787,8 +14789,7 @@ window.GameHubDeveloperPortal = window.GameHubDeveloperPortal || {};
     const rows = model.allGameRows(state);
     if (state.activeTab === 'entity') return `<section class="fo-filters" aria-label="主体汇总筛选"><label class="fo-keyword"><span>开发者／财务主体</span><input type="search" data-fo-filter="keyword" value="${esc(item.keyword)}" placeholder="输入开发者或财务主体"></label><label><span>账单月份</span><select data-fo-filter="billingMonth">${selectOptions(unique(rows,'billingMonth'),item.billingMonth,'全部月份')}</select></label><label><span>状态</span><select data-fo-filter="status">${option('all','全部状态',item.status)}${option('pending','待确认',item.status)}${option('confirmed','已确认',item.status)}</select></label><div class="fo-filter-actions"><button type="button" data-fo-action="reset">重置</button><button type="button" class="is-primary" data-fo-action="query">查询</button></div></section>`;
     const games = new Map(rows.map(row => [row.gameId,row.gameName]));
-    const itemLabels = new Map(rows.map(row => [row.itemType,row.itemLabel]));
-    return `<section class="fo-filters fo-game-filters" aria-label="游戏明细筛选"><label class="fo-keyword"><span>开发者／财务主体</span><input type="search" data-fo-filter="keyword" value="${esc(item.keyword)}" placeholder="输入开发者或财务主体"></label><label><span>游戏</span><select data-fo-filter="gameId">${selectOptions([...games.keys()].sort(),item.gameId,'全部游戏',value => `${games.get(value)}（${value}）`)}</select></label><label><span>账单月份</span><select data-fo-filter="billingMonth">${selectOptions(unique(rows,'billingMonth'),item.billingMonth,'全部月份')}</select></label><label><span>结算月份</span><select data-fo-filter="settlementMonth">${selectOptions(unique(rows,'settlementMonth'),item.settlementMonth,'全部月份')}</select></label><label><span>结算项</span><select data-fo-filter="itemType">${selectOptions([...itemLabels.keys()],item.itemType,'全部结算项',value => itemLabels.get(value))}</select></label><label><span>状态</span><select data-fo-filter="status">${option('all','全部状态',item.status)}${option('pending','待确认',item.status)}${option('confirmed','已确认',item.status)}</select></label><div class="fo-filter-actions"><button type="button" data-fo-action="reset">重置</button><button type="button" class="is-primary" data-fo-action="query">查询</button></div></section>`;
+    return `<section class="fo-filters fo-game-filters" aria-label="游戏明细筛选"><label class="fo-keyword"><span>开发者／财务主体</span><input type="search" data-fo-filter="keyword" value="${esc(item.keyword)}" placeholder="输入开发者或财务主体"></label><label><span>游戏</span><select data-fo-filter="gameId">${selectOptions([...games.keys()].sort(),item.gameId,'全部游戏',value => `${games.get(value)}（${value}）`)}</select></label><label><span>账单月份</span><select data-fo-filter="billingMonth">${selectOptions(unique(rows,'billingMonth'),item.billingMonth,'全部月份')}</select></label><label><span>结算月份</span><select data-fo-filter="settlementMonth">${selectOptions(unique(rows,'settlementMonth'),item.settlementMonth,'全部月份')}</select></label><label><span>状态</span><select data-fo-filter="status">${option('all','全部状态',item.status)}${option('pending','待确认',item.status)}${option('confirmed','已确认',item.status)}</select></label><div class="fo-filter-actions"><button type="button" data-fo-action="reset">重置</button><button type="button" class="is-primary" data-fo-action="query">查询</button></div></section>`;
   }
 
   const pageRows = rows => {
@@ -14874,9 +14875,10 @@ window.GameHubDeveloperPortal = window.GameHubDeveloperPortal || {};
     return (rules.length ? rules : [model.statements.tierRuleFor(state.statementState,entity.id,'2026-09-01',game.id)]).map(rule=>({...rule,gameId:game.id,gameName:game.name,entity}));
   }));
   const sharingTable = () => {
-    const keyword = String(state.sharingKeyword || '').trim().toLocaleLowerCase();
-    const rows = configuredRules().map((rule,index)=>({...rule,originalIndex:index})).filter(rule=>!keyword || [rule.entity.developerName,rule.entity.name,rule.gameId,rule.gameName,rule.operator || '系统'].join(' ').toLocaleLowerCase().includes(keyword));
-    return `<form class="fo-filters fo-game-filters fo-sharing-filters" aria-label="配置分成筛选" data-fo-sharing-search><label class="fo-keyword"><span>配置清单搜索</span><input type="search" data-fo-sharing-keyword value="${esc(state.sharingKeyword || '')}" placeholder="输入开发者、财务主体、游戏或操作人"></label><div class="fo-filter-actions"><button type="button" data-fo-action="sharing-reset">重置</button><button type="submit" class="is-primary">查询</button></div></form><section class="fo-card fo-table-card"><header class="fo-table-toolbar"><div><strong>分成配置清单</strong><span>管理各财务主体的平台阶梯分成规则</span></div><div class="fo-toolbar-actions"><button type="button" class="is-primary" data-fo-action="open-tier-editor">配置阶梯分成</button></div></header>${state.tierMessage ? `<div class="fo-export-message" data-fo-tier-status>${esc(state.tierMessage)}</div>` : ''}<div class="fo-table-scroll"><table class="fo-table fo-sharing-table"><thead><tr><th>开发者／财务主体</th><th>游戏ID</th><th>游戏名称</th><th>有效期</th><th>平台分成阶梯</th><th>操作人</th><th>最近操作</th><th>操作</th></tr></thead><tbody>${rows.map((rule,index)=>`<tr><td><strong>${esc(rule.entity.developerName)}</strong><small>${esc(rule.entity.name)}</small></td><td>${esc(rule.gameId)}</td><td>${esc(rule.gameName)}</td><td>${esc(rule.id.startsWith('TIER-DEFAULT-') ? '默认适用' : rule.startDate || '不限')}<br>至 ${esc(rule.endDate || '长期有效')}</td><td>${rule.tiers.map(tier=>`<div>${esc(amount(tier.fromMinor))} ＜ 月结算金额 ${tier.toMinor == null ? '（不设上限）' : '≤ '+esc(amount(tier.toMinor))} 元：${esc(percent(tier.platformRate))}</div>`).join('')}</td><td>${esc(rule.operator || '系统')}</td><td>${esc(rule.operatedAt || '—')}</td><td><button type="button" data-fo-action="view-tier-rule" data-rule-index="${rule.originalIndex}">查看</button><button type="button" data-fo-action="edit-tier-rule" data-rule-index="${rule.originalIndex}">修改</button></td></tr>`).join('') || '<tr><td colspan="8" style="text-align:center;padding:32px">暂无匹配的分成配置，请调整搜索条件。</td></tr>'}</tbody></table></div></section>`;
+    const criteria = state.sharingFilters || { financialEntity:'', developer:'', game:'' };
+    const matches = (value,query) => String(value || '').toLocaleLowerCase().includes(String(query || '').trim().toLocaleLowerCase());
+    const rows = configuredRules().map((rule,index)=>({...rule,originalIndex:index})).filter(rule=>matches(rule.entity.name,criteria.financialEntity) && matches(rule.entity.developerName,criteria.developer) && matches(rule.gameName,criteria.game));
+    return `<form class="fo-filters fo-game-filters fo-sharing-filters" aria-label="配置分成筛选" data-fo-sharing-search><label><span>财务主体</span><input type="text" data-fo-sharing-entity value="${esc(criteria.financialEntity)}" placeholder="输入财务主体"></label><label><span>开发者</span><input type="text" data-fo-sharing-developer value="${esc(criteria.developer)}" placeholder="输入开发者"></label><label><span>游戏名称</span><input type="text" data-fo-sharing-game value="${esc(criteria.game)}" placeholder="输入游戏名称"></label><div class="fo-filter-actions"><button type="button" data-fo-action="sharing-reset">重置</button><button type="submit" class="is-primary">查询</button></div></form><section class="fo-card fo-table-card"><header class="fo-table-toolbar"><div><strong>分成配置清单</strong><span>管理各财务主体的平台阶梯分成规则</span></div><div class="fo-toolbar-actions"><button type="button" class="is-primary" data-fo-action="open-tier-editor">配置阶梯分成</button></div></header>${state.tierMessage ? `<div class="fo-export-message" data-fo-tier-status>${esc(state.tierMessage)}</div>` : ''}<div class="fo-table-scroll"><table class="fo-table fo-sharing-table"><thead><tr><th>开发者／财务主体</th><th>游戏ID</th><th>游戏名称</th><th>有效期</th><th>平台分成阶梯</th><th>操作人</th><th>最近操作</th><th>操作</th></tr></thead><tbody>${rows.map((rule,index)=>`<tr><td><strong>${esc(rule.entity.developerName)}</strong><small>${esc(rule.entity.name)}</small></td><td>${esc(rule.gameId)}</td><td>${esc(rule.gameName)}</td><td>${esc(rule.id.startsWith('TIER-DEFAULT-') ? '默认适用' : rule.startDate || '不限')}<br>至 ${esc(rule.endDate || '长期有效')}</td><td>${rule.tiers.map(tier=>`<div>${esc(amount(tier.fromMinor))} ＜ 月结算金额 ${tier.toMinor == null ? '（不设上限）' : '≤ '+esc(amount(tier.toMinor))} 元：${esc(percent(tier.platformRate))}</div>`).join('')}</td><td>${esc(rule.operator || '系统')}</td><td>${esc(rule.operatedAt || '—')}</td><td><button type="button" data-fo-action="view-tier-rule" data-rule-index="${rule.originalIndex}">查看</button><button type="button" data-fo-action="edit-tier-rule" data-rule-index="${rule.originalIndex}">修改</button></td></tr>`).join('') || '<tr><td colspan="8" style="text-align:center;padding:32px">暂无匹配的分成配置，请调整搜索条件。</td></tr>'}</tbody></table></div></section>`;
   };
   const createTierDraft = financialEntityId => {
     const rule = model.statements.tierRuleFor(state.statementState,financialEntityId,'2026-09-01');
@@ -14967,7 +14969,7 @@ window.GameHubDeveloperPortal = window.GameHubDeveloperPortal || {};
   const readFilters = () => {
     state.filters[state.activeTab] = state.activeTab === 'entity'
       ? { keyword:document.querySelector('[data-fo-filter="keyword"]')?.value.trim() || '', billingMonth:document.querySelector('[data-fo-filter="billingMonth"]')?.value || 'all', status:document.querySelector('[data-fo-filter="status"]')?.value || 'all' }
-      : { keyword:document.querySelector('[data-fo-filter="keyword"]')?.value.trim() || '', gameId:document.querySelector('[data-fo-filter="gameId"]')?.value || 'all', billingMonth:document.querySelector('[data-fo-filter="billingMonth"]')?.value || 'all', settlementMonth:document.querySelector('[data-fo-filter="settlementMonth"]')?.value || 'all', itemType:document.querySelector('[data-fo-filter="itemType"]')?.value || 'all', status:document.querySelector('[data-fo-filter="status"]')?.value || 'all' };
+      : { keyword:document.querySelector('[data-fo-filter="keyword"]')?.value.trim() || '', gameId:document.querySelector('[data-fo-filter="gameId"]')?.value || 'all', billingMonth:document.querySelector('[data-fo-filter="billingMonth"]')?.value || 'all', settlementMonth:document.querySelector('[data-fo-filter="settlementMonth"]')?.value || 'all', status:document.querySelector('[data-fo-filter="status"]')?.value || 'all' };
     state.pages[state.activeTab] = 1; state.selected[state.activeTab] = []; state.exportMessage = '';
   };
   const readTierForm = () => {
@@ -14997,7 +14999,7 @@ window.GameHubDeveloperPortal = window.GameHubDeveloperPortal || {};
   document.addEventListener('submit', event => {
     if (!event.target.matches('[data-fo-sharing-search]')) return;
     event.preventDefault();
-    state.sharingKeyword = document.querySelector('[data-fo-sharing-keyword]')?.value.trim() || '';
+    state.sharingFilters = { financialEntity:document.querySelector('[data-fo-sharing-entity]')?.value.trim() || '', developer:document.querySelector('[data-fo-sharing-developer]')?.value.trim() || '', game:document.querySelector('[data-fo-sharing-game]')?.value.trim() || '' };
     rerender();
   });
   document.addEventListener('change',event => {
@@ -15021,11 +15023,11 @@ window.GameHubDeveloperPortal = window.GameHubDeveloperPortal || {};
     const action = control.dataset.foAction;
     if ((action === 'close-drawer' || action === 'close-tier-editor') && event.target.closest('[data-fo-stop]') && !event.target.closest('header button') && !event.target.closest('footer button')) return;
     if (action === 'tier-date-cancel' && event.target.closest('[data-fo-tier-date-dialog]') && !event.target.closest('button[data-fo-action="tier-date-cancel"]')) return;
-    if (action === 'sharing-reset') { state.sharingKeyword = ''; rerender(); }
+    if (action === 'sharing-reset') { state.sharingFilters = { financialEntity:'', developer:'', game:'' }; rerender(); }
     if (action === 'tab') { state.activeTab = control.dataset.foTab; state.exportMessage = ''; state.tierMessage = ''; rerender(); }
     if (action === 'query') { readFilters(); rerender(); }
     if (action === 'reset') {
-      state.filters[state.activeTab] = state.activeTab === 'entity' ? { keyword:'',billingMonth:'2026-08',status:'all' } : { keyword:'',billingMonth:'all',settlementMonth:'all',gameId:'all',itemType:'all',status:'all' };
+      state.filters[state.activeTab] = state.activeTab === 'entity' ? { keyword:'',billingMonth:'2026-08',status:'all' } : { keyword:'',billingMonth:'all',settlementMonth:'all',gameId:'all',status:'all' };
       state.pages[state.activeTab] = 1; state.selected[state.activeTab] = []; state.exportMessage = ''; rerender();
     }
     if (action === 'page') { state.pages[state.activeTab] = Math.max(1,Number(control.dataset.foPage) || 1); rerender(); }
