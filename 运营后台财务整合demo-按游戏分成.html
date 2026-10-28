@@ -14413,6 +14413,7 @@ window.PublisherSettlementStatements = (() => {
       userPaidMinor:0, paymentFeeMinor:0, taxMinor:0, taxableMinor:0, refundChargebackMinor, refundMinor, chargebackMinor, salesTaxMinor:0,
       platformReceivedMinor, shareableNetMinor:0, weightedTaxRate:null, platformShareRate:null, platformShareMinor:0, payableMinor:platformReceivedMinor,
       payableUsdMinor:roundMinor(platformReceivedMinor / context.fx.rate), tierRuleVersion:'POLICY-REFUND-OFFSET', tierRuleStartDate:'0001-01-01', tierRuleEndDate:'', tierSnapshots:[],
+      refundDetails:[{ productType:'游戏本体', productName:context.game.name+' 标准版', refundChargebackMinor }],
     });
   };
   const createStatement = context => context.itemType === 'game_sales_share' ? createGameStatement(context) : context.itemType === 'cdkey_sales_share' ? createCdkeyStatement(context) : createAdjustmentStatement(context);
@@ -14855,10 +14856,14 @@ window.GameHubDeveloperPortal = window.GameHubDeveloperPortal || {};
         const product=products.get(key);
         product.income+=Number(item.userPaidMinor||0);product.refund+=Number(item.refundChargebackMinor||0);product.statuses.push(row.status);
       }));
+      records.forEach(row=>(row.refundDetails||[]).forEach(item=>{
+        const key=JSON.stringify([item.productType,item.productName]);
+        if(!products.has(key)) products.set(key,{type:item.productType,name:item.productName,income:0,refund:0,statuses:[]});
+        products.get(key).refund+=Number(item.refundChargebackMinor||0);
+      }));
       const body=[...products.values()].map(item=>'<tr><td>'+esc(item.type)+'</td><td>'+esc(item.name)+'</td><td>'+esc(amount(item.income))+'</td><td>'+esc(amount(item.refund))+'</td></tr>').join('');
       const summary=[['总收入','userPaidMinor'],['退款与拒付','refundChargebackMinor'],['平台分成','platformShareMinor'],['应结算金额（CNY）','payableMinor']].map(([label,field])=>'<div><span>'+label+'</span><strong>'+esc(amount(total(field)))+'</strong></div>').join('');
-      const unallocated=total('refundChargebackMinor')-[...products.values()].reduce((n,item)=>n+item.refund,0);
-      return '<div class="fo-drawer-layer" data-fo-action="close-drawer"><aside class="fo-drawer" role="dialog" aria-modal="true" aria-label="游戏结算明细" data-fo-stop><header><div><h2>游戏结算明细</h2><p>'+esc(group.gameName)+' · '+esc(group.billingMonth)+' 账单 / '+esc(group.settlementMonth)+' 结算</p></div><button type="button" data-fo-action="close-drawer" aria-label="关闭">×</button></header><div class="fo-drawer-body"><section class="fo-drawer-summary fo-product-summary">'+summary+'</section><div class="fo-table-scroll"><table class="fo-table" data-fo-group-details><thead><tr><th>商品类型</th><th>商品名称</th><th>总收入</th><th>退款与拒付</th></tr></thead><tbody>'+body+'</tbody></table></div>'+(unallocated ? '<p class="fo-muted">当月另有 '+esc(amount(unallocated))+' 元退款与拒付调整未关联具体商品，已计入上方汇总。</p>' : '')+'</div><footer><button type="button" data-fo-action="close-drawer">关闭</button></footer></aside></div>';
+      return '<div class="fo-drawer-layer" data-fo-action="close-drawer"><aside class="fo-drawer" role="dialog" aria-modal="true" aria-label="游戏销售明细" data-fo-stop><header><div><h2>游戏销售明细</h2><p>'+esc(group.gameName)+' · '+esc(group.billingMonth)+' 账单 / '+esc(group.settlementMonth)+' 结算</p></div><button type="button" data-fo-action="close-drawer" aria-label="关闭">×</button></header><div class="fo-drawer-body"><section class="fo-drawer-summary fo-product-summary">'+summary+'</section><div class="fo-table-scroll"><table class="fo-table" data-fo-group-details><thead><tr><th>商品类型</th><th>商品名称</th><th>总收入</th><th>退款与拒付</th></tr></thead><tbody>'+body+'</tbody></table></div>'+'</div><footer><button type="button" data-fo-action="close-drawer">关闭</button></footer></aside></div>';
     }
     const statement = model.allGameRows(state).find(row => row.id === state.detailStatementId);
     if (!statement) return '';
