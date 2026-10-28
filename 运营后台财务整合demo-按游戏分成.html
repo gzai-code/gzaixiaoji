@@ -14177,6 +14177,7 @@ window.PublisherSettlementStatements = (() => {
     const number = Number(month.slice(5, 7));
     return number === 12 ? `${year + 1}-01` : `${year}-${String(number + 1).padStart(2, '0')}`;
   };
+  const settlementMonthFor = billingMonth => nextMonth(nextMonth(billingMonth));
   const assertDate = (value,label = '日期') => {
     const text = String(value || '').trim();
     const match = text.match(DATE_PATTERN);
@@ -14336,14 +14337,14 @@ window.PublisherSettlementStatements = (() => {
     });
   };
 
-  const lockedFxFor = (billingMonth, monthIndex) => ({ rate:Number((7.12 + monthIndex * 0.03).toFixed(4)), version:`FX-${nextMonth(billingMonth).replace('-', '')}-CNYUSD` });
+  const lockedFxFor = (billingMonth, monthIndex) => ({ rate:Number((7.12 + monthIndex * 0.03).toFixed(4)), version:`FX-${settlementMonthFor(billingMonth).replace('-', '')}-CNYUSD` });
   const statementBase = ({ entity, developerId, developerName, game, billingMonth, itemType, confirmed, fx, suffix }) => ({
     id:`ST-${billingMonth.replace('-', '')}-${game.id}-${suffix}`,
     developerId, developerName, entityName:entity.legalName, entityVersion:entity.entityVersion, accountVersion:entity.accountVersion,
     bankAccountName:entity.bankAccountName, bankAccount:entity.bankAccount, bankName:entity.bankName,
-    gameId:game.id, gameName:game.name, billingMonth, settlementMonth:nextMonth(billingMonth), itemType, itemLabel:ITEM_LABELS[itemType], currency:'CNY',
+    gameId:game.id, gameName:game.name, billingMonth, settlementMonth:settlementMonthFor(billingMonth), itemType, itemLabel:ITEM_LABELS[itemType], currency:'CNY',
     lockedFxRate:fx.rate, fxRateVersion:fx.version, status:confirmed ? 'confirmed' : 'pending',
-    lockedAt:`${nextMonth(billingMonth)}-05 11:20`, confirmedAt:confirmed ? `${nextMonth(billingMonth)}-08 10:30` : '', confirmedBy:confirmed ? '开发者 王明' : '',
+    lockedAt:`${settlementMonthFor(billingMonth)}-05 11:20`, confirmedAt:confirmed ? `${settlementMonthFor(billingMonth)}-08 10:30` : '', confirmedBy:confirmed ? '开发者 王明' : '',
   });
   const withLegacyAliases = row => ({
     ...row,
@@ -14654,7 +14655,7 @@ window.PublisherSettlementStatements = (() => {
   };
 
   return Object.freeze({
-    createState,nextMonth,statementsFor,confirmStatements,calculateTieredPlatformShare,tierRuleFor,saveTierRule,entitySummariesFor,
+    createState,nextMonth,settlementMonthFor,statementsFor,confirmStatements,calculateTieredPlatformShare,tierRuleFor,saveTierRule,entitySummariesFor,
     financialEntity,financialEntityApplications,submitFinancialEntity,reviewFinancialEntity,exportStatementsCsv,exportEntitySummariesCsv,
   });
 })();
@@ -14707,7 +14708,7 @@ window.PublisherFinanceOperationsModel = (() => {
       const joined = field => [...new Set(items.map(row => row[field]).filter(Boolean))].sort().join('、');
       const total = field => items.reduce((sum,row) => sum + Number(row[field] || 0),0);
       const row = {...items[0],id:'GAME-GROUP-'+key,sourceStatements:items,
-        billingMonth:items[0].billingMonth,settlementMonth:statements.nextMonth(items[0].billingMonth),
+        billingMonth:items[0].billingMonth,settlementMonth:statements.settlementMonthFor(items[0].billingMonth),
         itemType:'game_summary',itemLabel:joined('itemLabel'),
         status:items.every(row => row.status === 'confirmed') ? 'confirmed' : items.every(row => row.status === 'pending') ? 'pending' : 'mixed'};
       ['userPaidMinor','platformReceivedMinor','paymentFeeMinor','taxMinor','taxableMinor','shareableNetMinor','refundChargebackMinor','platformShareMinor','payableMinor'].forEach(field => row[field]=total(field));
