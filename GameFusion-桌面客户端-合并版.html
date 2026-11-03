@@ -297,7 +297,11 @@ body:has(.single-shell.client-active) .single-shell.client-active{width:min(1120
 .platform-upload-switch button.active{border-color:#263941;color:#fff;background:#263941}
 .platform-upload-switch button:focus-visible{outline:2px solid #087e99;outline-offset:2px}
 </style>
-</head>
+<style>
+.gf-redeem-layer{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(2,9,13,.72);backdrop-filter:blur(4px)}
+.gf-redeem-dialog{position:relative;box-sizing:border-box;width:530px;max-width:100%;padding:30px;border:1px solid #385260;border-radius:5px;background:linear-gradient(120deg,#1e313c,#17262f);box-shadow:0 24px 80px #0007;color:#edf4f8;font-family:'Microsoft YaHei','Segoe UI',sans-serif}
+.gf-redeem-dialog h2{font-size:24px;line-height:1.4;margin:0 0 14px;font-weight:700}.gf-redeem-dialog p{font-size:13px;color:#b8cad5;line-height:1.7;margin:0 0 22px}.gf-redeem-close{position:absolute;right:14px;top:10px;border:0;background:none;color:#8da7b6;font-size:22px;cursor:pointer}.gf-redeem-dialog input{box-sizing:border-box;width:100%;height:41px;padding:0 12px;border:1px solid #526f7d;border-radius:3px;outline:none;background:#0c1921;color:#f0f7fa;font:13px inherit}.gf-redeem-dialog input:focus{border-color:#66dff1;box-shadow:0 0 0 1px #66dff1}.gf-redeem-dialog small{display:block;font-size:12px;color:#829caa;margin-top:10px}.gf-redeem-error{min-height:20px;color:#f09e9e;font-size:12px;margin-top:10px}.gf-redeem-dialog footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}.gf-redeem-dialog footer button{height:34px;min-width:84px;border:1px solid #456474;border-radius:3px;background:#293f4d;color:#c7d9e3;font:13px inherit;cursor:pointer}.gf-redeem-dialog footer button[type=submit],.gf-redeem-dialog .gf-redeem-done{background:#21728b;border-color:#329fbb;color:#eafaff}.gf-redeem-success{text-align:center;padding:16px 0}.gf-redeem-success .check{display:grid;place-items:center;width:50px;height:50px;margin:0 auto 20px;border:1px solid #65d4e4;border-radius:50%;color:#6edfe9;font-size:28px}.gf-redeem-success h2{font-size:23px}.gf-redeem-dialog button:focus-visible{outline:2px solid #6bd9ed;outline-offset:3px}
+</style></head>
 <body>
 <style id="client-support-and-about">
 .client-setting--link{width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer}.client-setting--link:hover,.client-about__links button:hover{background:#25323b}
@@ -1858,6 +1862,11 @@ addEventListener('message',e=>{if(e.data?.type!=='gamefusion-route')return;const
         tools.insertBefore(button,tools.querySelector('#accountButton'));
       }
     }
+    if(!tools.querySelector('[data-client-redeem-icon]')){
+      const redeem=doc.createElement('button');redeem.type='button';redeem.className='wg-top-action gf-redeem-icon';redeem.dataset.clientRedeemIcon='';redeem.title='兑换';redeem.setAttribute('aria-label','兑换');
+      const symbol=doc.createElement('span');symbol.textContent='兑';symbol.setAttribute('aria-hidden','true');symbol.style.cssText='display:grid;place-items:center;width:22px;height:22px;box-sizing:border-box;border:1.6px solid currentColor;border-radius:50%;font-family:Microsoft YaHei,PingFang SC,sans-serif;font-size:13px;font-weight:600;line-height:1;';redeem.append(symbol);
+      tools.insertBefore(redeem,tools.querySelector('[data-client-toolbar="settings"]'));
+    }
     updateDownloadBadge();rememberClientVisit();paintClientHistory();
   }
   const feedbackKey='gamefusion-feedback-demo-v2';
@@ -2902,5 +2911,16 @@ addEventListener('message',e=>{if(e.data?.type!=='gamefusion-route')return;const
 .single-shell .gf-dlc-modal .gf-dlc-page>footer{flex-wrap:wrap}
 @media(max-width:680px){.single-shell .gf-dlc-modal .gf-dlc-page__row{grid-template-columns:62px minmax(0,1fr) 18px}.single-shell .gf-dlc-modal .gf-dlc-page__status{display:none}.single-shell .gf-dlc-modal .gf-dlc-page__actions{flex-wrap:wrap}}
 </style>
-</body>
+<script>
+(()=>{
+let layer=null,previous=null;
+const close=()=>{layer?.remove();layer=null;previous?.focus();};
+document.addEventListener('click',event=>{const trigger=event.target.closest('[data-client-redeem-icon]');if(!trigger)return;if(layer)return;previous=trigger;layer=document.createElement('div');layer.className='gf-redeem-layer';
+layer.innerHTML='<section class="gf-redeem-dialog" role="dialog" aria-modal="true" aria-labelledby="gf-redeem-title"><button type="button" class="gf-redeem-close" aria-label="关闭">×</button><form><h2 id="gf-redeem-title">输入您的产品代码</h2><p id="gf-redeem-description">输入产品代码，将对应游戏内容加入您的 GameFusion 游戏库。</p><input id="gf-product-code" aria-label="产品代码" aria-describedby="gf-redeem-description gf-redeem-hint" autocomplete="off" maxlength="128" spellcheck="false"><small id="gf-redeem-hint">兑换码示例：1232</small><div class="gf-redeem-error" role="alert"></div><footer><button type="submit">确认</button><button type="button" data-redeem-cancel>取消</button></footer></form></section>';
+document.body.append(layer);layer.querySelector('.gf-redeem-close').onclick=close;layer.querySelector('[data-redeem-cancel]').onclick=close;
+layer.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();close();return;}if(e.key==='Tab'){const items=[...layer.querySelectorAll('button,input')];if(e.shiftKey&&document.activeElement===items[0]){e.preventDefault();items.at(-1).focus();}else if(!e.shiftKey&&document.activeElement===items.at(-1)){e.preventDefault();items[0].focus();}}});
+layer.querySelector('form').onsubmit=e=>{e.preventDefault();const input=layer.querySelector('input');if(!input.value.trim()){input.setAttribute('aria-invalid','true');layer.querySelector('.gf-redeem-error').textContent='请输入产品代码';input.focus();return;}const dialog=layer.querySelector('.gf-redeem-dialog');dialog.innerHTML='<button type="button" class="gf-redeem-close" aria-label="关闭">×</button><div class="gf-redeem-success" role="status"><span class="check" aria-hidden="true">✓</span><h2 id="gf-redeem-title">产品激活成功</h2></div><footer><button type="button" class="gf-redeem-done">完成</button></footer>';dialog.querySelector('.gf-redeem-close').onclick=close;dialog.querySelector('.gf-redeem-done').onclick=close;dialog.querySelector('.gf-redeem-done').focus();};
+layer.querySelector('input').addEventListener('input',()=>{layer.querySelector('input').removeAttribute('aria-invalid');layer.querySelector('.gf-redeem-error').textContent='';});layer.querySelector('input').focus();
+});})();
+</script></body>
 </html>
