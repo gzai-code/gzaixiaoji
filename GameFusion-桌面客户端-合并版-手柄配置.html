@@ -1125,6 +1125,7 @@ addEventListener('message',e=>{if(e.data?.type!=='gamefusion-route')return;const
     }
   };
   var accountRenderBeforeController=renderAccount;
+  window.__gfCreateControllerProfile=function(gameName){realDocument.querySelector('[data-client-nav="store"]')?.click();route('account');renderAccount('controller-profiles');q('[data-controller-add]')?.click();var select=q('[data-controller-editor-form] select[name="game"]');if(select){if(!Array.from(select.options).some(function(option){return option.value===gameName})){var option=document.createElement('option');option.value=option.textContent=gameName;select.append(option)}select.value=gameName}};
   renderAccount=function(tab){if(tab==='controller-profiles'){accountRenderBeforeController('identity');renderControllerProfilePage();return}accountRenderBeforeController(tab);if(state.user&&q('#page-account.active')){var nav=q('.account-nav');if(nav&&!nav.querySelector('[data-account-tab="controller-profiles"]')){var button=document.createElement('button');button.type='button';button.dataset.accountTab='controller-profiles';button.textContent='手柄配置';nav.insertBefore(button,nav.querySelector('[data-signout]'))}}};
   var webRenderCheckout=renderCheckout;
   renderCheckout=function(step){
@@ -2601,6 +2602,11 @@ addEventListener('message',e=>{if(e.data?.type!=='gamefusion-route')return;const
  });
  function openControllerProfiles(gameName){
    shell.querySelector('.gf-controller-modal')?.remove();
+   const libraryCards=[...panel.querySelectorAll('.client-grid .client-game')],lastGame=libraryCards[libraryCards.length-1]?.querySelector('h3')?.textContent;
+   if(gameName===lastGame){
+     const modal=document.createElement('div');modal.className='gf-download-modal gf-controller-modal';modal.innerHTML='<section class="gf-download-dialog" role="dialog" aria-modal="true" aria-label="手柄配置方案"><header><h2>手柄配置方案</h2><button type="button" class="gf-download-close" data-empty-close aria-label="关闭">×</button></header><div style="padding:32px 24px;text-align:center"><h3 style="font-size:16px">暂无手柄配置方案</h3><p style="color:#9aabb4;font-size:12px;line-height:1.8">这款游戏还没有手柄配置方案。新增配置，设置适合自己的按键布局。</p></div><form><div class="gf-download-foot" style="justify-content:flex-end"><button type="button" data-empty-close>取消</button><button type="submit">新增配置</button></div></form></section>';shell.append(modal);
+     modal.addEventListener('click',event=>{if(event.target===modal||event.target.closest('[data-empty-close]'))modal.remove()});modal.onkeydown=event=>{if(event.key==='Escape')modal.remove()};modal.querySelector('form').onsubmit=event=>{event.preventDefault();modal.remove();window.__gfCreateControllerProfile?.(gameName)};modal.querySelector('[data-empty-close]').focus();return;
+   }
    const key='gamefusion_controller_profiles_v1',all=JSON.parse(localStorage.getItem(key)||'{}');
    const profiles=[
      {id:'standard',name:'标准布局',brand:'Xbox',model:'无线控制器',map:['左摇杆　移动','右摇杆　视角','A　确认 / 跳跃','B　返回 / 闪避','X　互动 / 装填','Y　切换 / 重装','LT / RT　辅助 / 主操作','LB / RB　快捷操作']},
